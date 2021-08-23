@@ -1,0 +1,43 @@
+global class UpdateFBUserInfoAdapter extends uintegration.BaseAPIAdapter{
+    String fieldToModify = '', userFBId = '';
+    string apiKey = 'AIzaSyDmumjpza4_gB2fGL2SPGbqjV_aT88zmJI'; 
+    
+    global override String generateReqBody(Map<String,Object> staticParams, Map<String,Object> additionalParams) {
+        System.debug('--- additional Params '+additionalParams);
+        fieldToModify = (String)additionalParams.get('field_To_Be_Modified');
+        userFBId = (String)additionalParams.get('users_FireBase_Id');
+        return JsonGenForAppendingStringValToArray.generateJSONContent((List<String>)additionalParams.get('recipients_FireBase_Id'),(String)additionalParams.get('field_To_Be_Modified'));
+    }
+    
+    public override HttpRequest createRequest(HttpRequest request) {
+        
+        if(String.isBlank(fieldToModify) || String.isblank(userFBId))
+            throw new FBException('Error: invalid params');
+        
+        //String endpoint = 'https://firestore.googleapis.com/v1beta1/projects/studentproject-23c7e/databases/(default)/documents/users/'+usersFireBaseId+'?key='+apiKey+'?updateMask.fieldPaths=Name&updateMask.fieldPaths='+fieldToBeModified; 
+        //request.setHeader('Accept', '*/*');
+        //request.setHeader('Accept-Encoding', 'gzip, deflate, br');
+        request.setEndpoint(request.getEndpoint() + userFBId +'?key='+apiKey+'?updateMask.fieldPaths=Name&updateMask.fieldPaths='+fieldToModify);
+        System.debug('--- endpoint '+request.getEndpoint());
+        return request;
+    }
+
+    global override uintegration.IntegrationAPIResponse createResponse(HttpResponse httpResponse) {
+        uintegration.IntegrationAPIResponse response = new uintegration.IntegrationAPIResponse(httpResponse);
+        String responseString = httpResponse.getBody();
+        System.debug('--- onespan doc download response '+responseString);
+        return response;
+    }
+    
+    public static void appendRecipientsCallout(List<String> recipientsFireBaseId, String usersFireBaseId,String fieldToBeModified){
+        Map<String,Object> additionalParams = new Map<String,Object>();
+        Map<String,Object> queryParameterMap = new Map<String,Object>();
+        additionalParams.put('recipients_FireBase_Id',recipientsFireBaseId);
+        additionalParams.put('users_FireBase_Id',usersFireBaseId);
+        additionalParams.put('field_To_Be_Modified',fieldToBeModified);
+        uintegration.IntegrationService service = uintegration.IntegrationFactory.getBaseIntegrationService();
+        service.runAPIService('ADD_RECEPIENT_FIREBASE',queryParameterMap,additionalParams);
+    }
+    
+    class FBException extends Exception {}
+}
